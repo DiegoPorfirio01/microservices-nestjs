@@ -4,9 +4,9 @@ import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder } from '@nestjs/swagger';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  
+
   app.use(helmet());
 
   app.enableCors({
@@ -20,17 +20,20 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
-    })
-  )
+    }),
+  );
 
   const config = new DocumentBuilder()
-  .setTitle('Markeplace API Gateway')
-  .setDescription('Marketplace with micro services')
-  .setVersion('1.0')
-  .addBearerAuth()
-  .build()
-  
+    .setTitle('Markeplace API Gateway')
+    .setDescription('Marketplace with micro services')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  // TODO: Setup Swagger with config
+  void config;
+
   await app.listen(process.env.PORT ?? 3000);
 }
 
-bootstrap();
+void bootstrap();
