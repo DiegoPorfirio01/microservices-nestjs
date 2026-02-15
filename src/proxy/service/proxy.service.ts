@@ -3,6 +3,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { serviceConfig } from 'src/config/gateway.config';
 
+type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options';
+
+interface UserInfo {
+  userId: string;
+  email: string;
+  role: string;
+}
+
 @Injectable()
 export class ProxyService {
   private readonly logger = new Logger(ProxyService.name);
@@ -11,11 +19,11 @@ export class ProxyService {
 
   async proxyRequest(
     serviceName: keyof typeof serviceConfig,
-    method: string,
+    method: HttpMethod,
     path: string,
-    data?: any,
-    headers?: any,
-    userInfo?: any,
+    data?: unknown,
+    headers?: Record<string, string>,
+    userInfo?: UserInfo,
   ) {
     const service = serviceConfig[serviceName];
     const url = `${service.url}${path}`;
@@ -32,7 +40,7 @@ export class ProxyService {
 
       const response = await firstValueFrom(
         this.httpService.request({
-          method: method.toLowerCase() as any,
+          method: method.toLowerCase() as HttpMethod,
           url,
           data,
           headers: enhancedHeaders,
