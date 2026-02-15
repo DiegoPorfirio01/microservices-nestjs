@@ -1,8 +1,8 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -62,9 +62,63 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Marketplace API Gateway')
-    .setDescription('API Gateway for Marketplace Microservices')
+    .setDescription(
+      `
+      API Gateway for Marketplace Microservices Architecture
+
+      This gateway provides a unified entry point for all microservices including:
+      - User Management Service
+      - Product Catalog Service
+      - Checkout Service
+      - Payment Processing Service
+
+      All authenticated endpoints require a valid JWT token in the Authorization header.
+      `,
+    )
     .setVersion('1.0')
-    .addBearerAuth()
+    .setContact(
+      'API Support',
+      'https://github.com/DiegoPorfirio01',
+      'porfiriodiego64@gmail.com',
+    )
+    // .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    // .setTermsOfService('https://marketplace.com/terms')
+    .addServer(
+      `http://localhost:${process.env.PORT || 3005}`,
+      'Local Development Server',
+    )
+    // .addServer('https://api-dev.marketplace.com', 'Development Environment')
+    // .addServer('https://api-staging.marketplace.com', 'Staging Environment')
+    // .addServer('https://api.marketplace.com', 'Production Environment')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addTag('Authentication', 'User authentication and authorization endpoints')
+    .addTag('Health', 'Service health check and status monitoring')
+    .addTag('Proxy', 'Microservice proxy endpoints')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-API-Key',
+        in: 'header',
+        description: 'API Key for service-to-service communication',
+      },
+      'session-auth',
+    )
+    .addTag('Authentication', 'Authentication endpoints')
+    .addTag('Users', 'Users endpoints')
+    .addTag('Products', 'Products endpoints')
+    .addTag('Checkout', 'Checkout endpoints')
+    .addTag('Payments', 'Payments endpoints')
+    .addTag('Health', 'Health endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
