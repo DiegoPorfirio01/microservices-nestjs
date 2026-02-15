@@ -3,7 +3,7 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { LoginDto } from '../dtos/login.dto';
 import { RegisterDto } from '../dtos/register.dto';
-import { AuthService } from '../services/auth.service';
+import { AuthResponse, AuthService } from '../services/auth.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -16,6 +16,23 @@ export class AuthController {
     status: HttpStatus.OK,
     description: 'Login successful',
     type: String,
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+        },
+        accessToken: {
+          type: 'string',
+        },
+        sessionToken: {
+          type: 'string',
+        },
+        expiresIn: {
+          type: 'number',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -23,7 +40,7 @@ export class AuthController {
     type: String,
   })
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  async login(@Body() loginDto: LoginDto): Promise<any> {
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     return await this.authService.login(loginDto);
   }
 
@@ -35,8 +52,8 @@ export class AuthController {
     type: String,
   })
   @ApiResponse({
-    status: HttpStatus.TOO_MANY_REQUESTS,
-    description: 'Too many requests',
+    status: HttpStatus.CONFLICT,
+    description: 'User already exists',
     type: String,
   })
   @ApiResponse({
@@ -45,7 +62,7 @@ export class AuthController {
     type: String,
   })
   @Throttle({ medium: { limit: 3, ttl: 60000 } })
-  async register(@Body() registerDto: RegisterDto): Promise<any> {
+  async register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
     return await this.authService.register(registerDto);
   }
 }
