@@ -56,9 +56,22 @@ export class ProxyService {
       const response = await firstValueFrom(
         this.httpService.get(`${service.url}/health`, {
           timeout: 3000,
+          headers: {
+            'X-Health-Check': 'simple',
+          },
         }),
       );
-      return { status: 'healthy', data: response.data };
+
+      const healthData = response.data;
+      const serviceStatus = healthData?.status || 'ok';
+
+      return {
+        status: 'healthy',
+        data: {
+          status: serviceStatus,
+          timestamp: healthData?.timestamp || new Date().toISOString(),
+        },
+      };
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
