@@ -1,12 +1,12 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthController } from './controllers/auth.controller';
-import { AuthService } from './service/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { HttpModule } from '@nestjs/axios';
-import { JwtStrategy } from './strategies/jwt.strategy';
 import { ProxyModule } from 'src/proxy/proxy.module';
+import { AuthController } from './controllers/auth.controller';
+import { AuthService } from './services/auth.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
