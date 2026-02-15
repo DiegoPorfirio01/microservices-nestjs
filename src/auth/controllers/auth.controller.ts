@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { LoginDto } from '../dtos/login.dto';
+import { RegisterDto } from '../dtos/register.dto';
 import { AuthService } from '../services/auth.service';
 
 @ApiTags('Authentication')
@@ -21,9 +23,7 @@ export class AuthController {
     type: String,
   })
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  async login(
-    @Body() loginDto: { email: string; password: string },
-  ): Promise<any> {
+  async login(@Body() loginDto: LoginDto): Promise<any> {
     return await this.authService.login(loginDto);
   }
 
@@ -45,9 +45,7 @@ export class AuthController {
     type: String,
   })
   @Throttle({ medium: { limit: 3, ttl: 60000 } })
-  async register(
-    @Body() registerDto: { email: string; password: string },
-  ): Promise<any> {
+  async register(@Body() registerDto: RegisterDto): Promise<any> {
     return await this.authService.register(registerDto);
   }
 }
