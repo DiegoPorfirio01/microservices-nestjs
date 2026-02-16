@@ -1,15 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   CircuitBreakerOptions,
-  CircuitBreakerResult,
   CircuitBreakerState,
   CircuitBreakerStateEnum,
-} from './circuite-breaker.interface';
+} from './circuit-breaker.interface';
 
 @Injectable()
 export class CircuitBreakerService {
   private readonly logger = new Logger('CircuitBreaker');
-  private readonly circuitBreakerMap = new Map<string, CircuitBreakerState>();
+  private readonly circuits = new Map<string, CircuitBreakerState>();
   private readonly defaultOptions: CircuitBreakerOptions = {
     failureThreshold: 5,
     timeout: 60000,
@@ -18,49 +17,54 @@ export class CircuitBreakerService {
 
   async executeWithCircuitBreaker<T>(
     operation: () => Promise<T>,
-    fallback: () => Promise<T>,
     key: string,
-    options?: Partial<CircuitBreakerOptions>,
-  ): Promise<CircuitBreakerResult<T>> {
+    options: CircuitBreakerOptions = this.defaultOptions,
+    fallback?: () => Promise<T>,
+  ): Promise<T> {
     const config = { ...this.defaultOptions, ...options };
-    const circuit = this.getOrCreateCircuitBreaker(key, config);
+    const circuit = this.getOrCreateCircuit(key, config);
 
     if (circuit.state === CircuitBreakerStateEnum.OPEN) {
       if (Date.now() < circuit.nextAttemptTime) {
-        this.logger.warn(`Circuit breaker is open for key: ${key}`);
+        this.logger.warn(`Circuit breaker OPEN for ${key}, using fallback`);
 
         if (fallback) {
           return await fallback();
         }
 
-        throw new Error('Circuit breaker is open');
+        throw new Error('Circuit breaker OPEN');
+      } else {
+        circuit.state = CircuitBreakerStateEnum.HALF_OPEN;
+        this.logger.warn(
+          `Circuit breaker HALF_OPEN for ${key}, using fallback`,
+        );
       }
-
-      circuit.state = CircuitBreakerStateEnum.HALF_OPEN;
-      this.logger.warn(`Circuit breaker is half open for key: ${key}`);
     }
 
     try {
       const result = await operation();
       this.onSuccess(circuit, key);
+
       return result;
     } catch (error) {
-      this.onFailure(circuit, key, config);
-      this.logger.error(`Circuit breaker operation failed for key: ${key}`);
+      this.onFailure(circuit, key, options);
+      this.logger.error(`Circuit breaker failure for ${key}:`, error.message);
+
       if (fallback) {
-        this.logger.log(`Fallback executed for key: ${key}`);
+        this.logger.log(`Using fallback for ${key}`);
         return await fallback();
       }
+
       throw error;
     }
   }
 
-  private getOrCreateCircuitBreaker(
+  private getOrCreateCircuit(
     key: string,
     options: CircuitBreakerOptions,
   ): CircuitBreakerState {
-    if (!this.circuitBreakerMap.has(key)) {
-      this.circuitBreakerMap.set(key, {
+    if (!this.circuits.has(key)) {
+      this.circuits.set(key, {
         state: CircuitBreakerStateEnum.CLOSE,
         failureCount: 0,
         lastFailureTime: 0,
@@ -68,43 +72,42 @@ export class CircuitBreakerService {
       });
     }
 
-    return this.circuitBreakerMap.get(key)!;
+    return this.circuits.get(key)!;
+  }
+
+  private onSuccess(circuit: CircuitBreakerState, key: string): void {
+    circuit.failureCount = 0;
+    circuit.state = CircuitBreakerStateEnum.CLOSE;
+    this.logger.debug(`Circuit breaker SUCCESS for ${key}, state: CLOSED`);
   }
 
   private onFailure(
     circuit: CircuitBreakerState,
     key: string,
     options: CircuitBreakerOptions,
-  ) {
+  ): void {
     circuit.failureCount++;
     circuit.lastFailureTime = Date.now();
-    if (circuit.failureCount >= options.failureThreshold)
+
+    if (circuit.failureCount >= options.failureThreshold) {
       circuit.state = CircuitBreakerStateEnum.OPEN;
-    circuit.nextAttemptTime = Date.now() + options.resetTimeout;
-
-    this.logger.warn(
-      `Circuit breaker is open for key: ${key} after ${circuit.failureCount} failures`,
-    );
+      circuit.nextAttemptTime = Date.now() + options.resetTimeout;
+      this.logger.warn(
+        `Circuit breaker OPENED for ${key} after ${circuit.failureCount} failures`,
+      );
+    }
   }
 
-  private onSuccess(circuit: CircuitBreakerState, key: string): void {
-    circuit.failureCount = 0;
-    circuit.state = CircuitBreakerStateEnum.CLOSE;
-    this.logger.debug(`Circuit breaker is closed for key: ${key}`);
-  }
-
-  getCircuitState(key: string): CircuitBreakerStateEnum {
-    return (
-      this.circuitBreakerMap.get(key)?.state || CircuitBreakerStateEnum.CLOSE
-    );
+  getCircuitState(key: string): CircuitBreakerState | undefined {
+    return this.circuits.get(key);
   }
 
   getAllCircuits(): Map<string, CircuitBreakerState> {
-    return new Map(this.circuitBreakerMap);
+    return new Map(this.circuits);
   }
 
   resetCircuit(key: string): void {
-    this.circuitBreakerMap.delete(key);
-    this.logger.log(`Circuit breaker reset for key: ${key}`);
+    this.circuits.delete(key);
+    this.logger.log(`Circuit breaker RESET for ${key}`);
   }
 }

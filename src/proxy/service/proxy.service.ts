@@ -55,6 +55,7 @@ export class ProxyService {
 
         return response;
       },
+      `proxy-${serviceName}`,
       () => {
         this.logger.error(
           `Error proxying ${method} request to ${serviceName}: ${url}`,
@@ -62,7 +63,6 @@ export class ProxyService {
 
         throw new Error(`${serviceName} service is temporarily not available`);
       },
-      `proxy-${serviceName}`,
       {
         failureThreshold: 3,
         timeout: 30000,
