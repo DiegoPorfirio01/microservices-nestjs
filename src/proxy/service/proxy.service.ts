@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { serviceConfig } from 'src/config/gateway.config';
-import { CircuitBreakerService } from '../../common/circuite-breaker/circuit-breaker.service';
+import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options';
 
