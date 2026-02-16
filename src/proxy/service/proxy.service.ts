@@ -1,8 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { CircuitBreakerService } from 'src/common/circuite-breaker/circuite-breaker.service';
 import { serviceConfig } from 'src/config/gateway.config';
+import { CircuitBreakerService } from '../../common/circuite-breaker/circuit-breaker.service';
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options';
 
@@ -56,17 +56,13 @@ export class ProxyService {
         return response;
       },
       `proxy-${serviceName}`,
-      () => {
-        this.logger.error(
-          `Error proxying ${method} request to ${serviceName}: ${url}`,
-        );
-
-        throw new Error(`${serviceName} service is temporarily not available`);
-      },
       {
         failureThreshold: 3,
         timeout: 30000,
         resetTimeout: 30000,
+      },
+      () => {
+        throw new Error(`${serviceName} service is temporarily not available`);
       },
     );
   }

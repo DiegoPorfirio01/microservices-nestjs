@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CircuitBreakerService } from './circuite-breaker.service';
+import { CircuitBreakerService } from './circuit-breaker.service';
 
 Module({
   providers: [CircuitBreakerService],
